@@ -1,5 +1,7 @@
 -- QR Space · esquema de base de datos para Supabase
 -- Ejecútalo completo en Supabase → SQL Editor → New query → Run.
+-- Se puede volver a ejecutar sin perder datos (actualiza lo que haga falta).
+-- Después carga el menú con supabase/menu_soul45.sql.
 
 create extension if not exists pgcrypto;
 
@@ -11,9 +13,12 @@ create table if not exists products (
   category    text not null default 'Otros',
   price       integer not null check (price >= 0),   -- en pesos (COP), sin decimales
   available   boolean not null default true,
-  sort        integer not null default 0,
+  sort        integer not null default 0,            -- orden en el menú (también ordena las categorías)
   created_at  timestamptz not null default now()
 );
+-- Tamaño opcional: "Vaso", "Pinta", "Litro", "Trago", "Media", "Botella"...
+-- Los productos con el mismo nombre y categoría se muestran juntos en una sola tarjeta.
+alter table products add column if not exists variant text;
 
 -- ───────────── Pedidos ─────────────
 create table if not exists orders (
@@ -40,7 +45,7 @@ create table if not exists order_items (
   id          uuid primary key default gen_random_uuid(),
   order_id    uuid not null references orders(id) on delete cascade,
   product_id  uuid references products(id) on delete set null,
-  name        text not null,        -- copia del nombre al momento del pedido
+  name        text not null,        -- copia del nombre (con tamaño) al momento del pedido
   unit_price  integer not null,     -- copia del precio al momento del pedido
   qty         integer not null check (qty > 0)
 );
@@ -87,7 +92,7 @@ begin
     end if;
     v_qty := greatest(1, least(20, coalesce((it->>'qty')::int, 1)));
     insert into order_items (order_id, product_id, name, unit_price, qty)
-    values (o.id, p.id, p.name, p.price, v_qty);
+    values (o.id, p.id, p.name || coalesce(' · ' || nullif(p.variant, ''), ''), p.price, v_qty);
     v_total := v_total + p.price * v_qty;
   end loop;
 
@@ -99,21 +104,3 @@ $$;
 -- Solo el servidor (service_role) puede llamar la función.
 revoke execute on function create_order(text, text, text, jsonb) from public, anon, authenticated;
 grant execute on function create_order(text, text, text, jsonb) to service_role;
-
--- ───────────── Menú de ejemplo (bórralo o edítalo desde /bar/menu) ─────────────
-insert into products (name, description, category, price, sort)
-select * from (values
-  ('Cerveza nacional',  'Botella 330 ml',                     'Cervezas',  8000, 1),
-  ('Cerveza artesanal', 'Pregunta por la de la casa',         'Cervezas', 14000, 2),
-  ('Michelada',         'Limón, sal y tu cerveza favorita',   'Cervezas', 12000, 3),
-  ('Mojito',            'Ron blanco, hierbabuena, limón',     'Cócteles', 24000, 1),
-  ('Margarita',         'Tequila, triple sec, limón',         'Cócteles', 26000, 2),
-  ('Gin tonic',         'Ginebra, tónica, pepino',            'Cócteles', 28000, 3),
-  ('Aguardiente',       'Media botella',                      'Licores',  65000, 1),
-  ('Shot de tequila',   'Con sal y limón',                    'Licores',  12000, 2),
-  ('Gaseosa',           '350 ml',                             'Sin alcohol', 5000, 1),
-  ('Limonada de coco',  'Natural',                            'Sin alcohol', 12000, 2),
-  ('Agua',              'Con o sin gas',                      'Sin alcohol', 4000, 3),
-  ('Picada para 2',     'Chorizo, papa criolla, arepa',       'Para picar', 38000, 1)
-) as v(name, description, category, price, sort)
-where not exists (select 1 from products);

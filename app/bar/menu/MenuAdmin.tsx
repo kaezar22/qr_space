@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatCOP, type Product } from "@/lib/types";
 
-const empty = { name: "", description: "", category: "", price: "" };
+const empty = { name: "", description: "", category: "", price: "", variant: "" };
 
 export default function MenuAdmin() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -55,7 +55,7 @@ export default function MenuAdmin() {
 
   function startEdit(p: Product) {
     setEditing(p.id);
-    setDraft({ name: p.name, description: p.description ?? "", category: p.category, price: String(p.price) });
+    setDraft({ name: p.name, description: p.description ?? "", category: p.category, price: String(p.price), variant: p.variant ?? "" });
   }
 
   async function saveEdit(id: string) {
@@ -79,10 +79,16 @@ export default function MenuAdmin() {
             onChange={(e) => setForm({ ...form, price: e.target.value })} required />
           <input className="input" style={{ width: 170 }} placeholder="Categoría" list="cats" value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })} />
+          <input className="input" style={{ width: 150 }} placeholder="Tamaño (opcional)" list="variants" value={form.variant}
+            onChange={(e) => setForm({ ...form, variant: e.target.value })} />
+          <datalist id="variants">{["Vaso", "Pinta", "Litro", "Trago", "Media", "Botella"].map((v) => <option key={v} value={v} />)}</datalist>
           <datalist id="cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
         </div>
         <input className="input" placeholder="Descripción corta (opcional)" value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <p className="muted small" style={{ margin: 0 }}>
+          Para un producto con varios tamaños (vaso, pinta, litro…), agrégalo una vez por tamaño con el mismo nombre: el cliente lo verá en una sola tarjeta.
+        </p>
         {error && <div className="error">{error}</div>}
         <div><button className="btn btn-primary">Agregar</button></div>
       </form>
@@ -109,6 +115,8 @@ export default function MenuAdmin() {
                             onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
                           <input className="input" value={draft.category} list="cats" placeholder="Categoría"
                             onChange={(e) => setDraft({ ...draft, category: e.target.value })} />
+                          <input className="input" value={draft.variant} list="variants" placeholder="Tamaño (opcional)"
+                            onChange={(e) => setDraft({ ...draft, variant: e.target.value })} />
                         </div>
                       </td>
                       <td>
@@ -131,7 +139,10 @@ export default function MenuAdmin() {
                         </label>
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{p.name}</div>
+                        <div style={{ fontWeight: 600 }}>
+                          {p.name}
+                          {p.variant && <span className="pill pill-accent" style={{ marginLeft: 8 }}>{p.variant}</span>}
+                        </div>
                         {p.description && <div className="muted small">{p.description}</div>}
                       </td>
                       <td>{formatCOP(p.price)}</td>

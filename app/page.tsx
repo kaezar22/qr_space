@@ -4,8 +4,8 @@ const barName = process.env.NEXT_PUBLIC_BAR_NAME || "QR Space";
 
 export default function Home() {
   return (
-    <main className="client" style={{ paddingTop: 48 }}>
-      <h1 className="display" style={{ fontSize: "2.6rem" }}>{barName}</h1>
+    <main className="client" style={{ paddingTop: 48, textAlign: "center" }}>
+      <h1 className="brand-name" style={{ marginTop: 0 }}>{barName}</h1>
       <p className="muted">
         Escanea el código QR de tu mesa para ver el menú y pedir. Te avisamos aquí mismo cuando tu
         pedido esté listo.

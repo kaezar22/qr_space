@@ -63,10 +63,12 @@ export default function QrSheet({ barName }: { barName: string }) {
       <div className="qr-grid">
         {codes.map((c) => (
           <div key={c.table} className="qr-card">
-            <div className="h">{barName}</div>
+            <div className="brandline">{barName}</div>
             <div className="t">Mesa {c.table}</div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={c.img} alt={`QR mesa ${c.table}`} />
+            <div className="qrbox">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.img} alt={`QR mesa ${c.table}`} />
+            </div>
             <div className="h">Escanea, pide y te avisamos cuando esté listo</div>
           </div>
         ))}

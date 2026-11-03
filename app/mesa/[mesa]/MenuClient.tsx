@@ -3,13 +3,22 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BRAND } from "@/lib/brand";
 import { getName, getOrders, saveOrder, setName, type SavedOrder } from "@/lib/local";
-import { formatCOP, type Product } from "@/lib/types";
+import { formatCOP, formatK, productLabel, type Product } from "@/lib/types";
 
 interface Props {
   table: string;
   products: Product[];
   barName: string;
+}
+
+/** Un producto en la carta, con uno o varios tamaños (vaso/pinta/litro...). */
+interface Group {
+  key: string;
+  name: string;
+  description: string | null;
+  options: Product[];
 }
 
 export default function MenuClient({ table, products, barName }: Props) {
@@ -29,14 +38,35 @@ export default function MenuClient({ table, products, barName }: Props) {
     setRecent(getOrders());
   }, []);
 
+  // Categorías en el orden del menú; dentro, productos agrupados por nombre.
   const categories = useMemo(() => {
-    const map = new Map<string, Product[]>();
+    const cats = new Map<string, Map<string, Group>>();
     for (const p of products) {
-      if (!map.has(p.category)) map.set(p.category, []);
-      map.get(p.category)!.push(p);
+      if (!cats.has(p.category)) cats.set(p.category, new Map());
+      const groups = cats.get(p.category)!;
+      const key = p.name.trim().toLowerCase();
+      if (!groups.has(key)) groups.set(key, { key, name: p.name, description: p.description, options: [] });
+      const g = groups.get(key)!;
+      g.options.push(p);
+      if (!g.description && p.description) g.description = p.description;
     }
-    return [...map.entries()];
+    return [...cats.entries()].map(([cat, groups]) => [cat, [...groups.values()]] as const);
   }, [products]);
+
+  // Resalta la pestaña de la categoría visible al hacer scroll.
+  useEffect(() => {
+    const els = Object.entries(sectionRefs.current).filter(([, el]) => el) as [string, HTMLElement][];
+    if (!els.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActiveCat(top.target.getAttribute("data-cat"));
+      },
+      { rootMargin: "-80px 0px -60% 0px" },
+    );
+    els.forEach(([, el]) => io.observe(el));
+    return () => io.disconnect();
+  }, [categories]);
 
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const lines = Object.entries(cart)
@@ -92,25 +122,39 @@ export default function MenuClient({ table, products, barName }: Props) {
     }
   }
 
+  const Qty = ({ id }: { id: string }) => {
+    const q = cart[id] ?? 0;
+    return q === 0 ? (
+      <button className="add" aria-label="Agregar" onClick={() => change(id, 1)}>+</button>
+    ) : (
+      <span className="qty">
+        <button className="btn-round" aria-label="Quitar uno" onClick={() => change(id, -1)}>−</button>
+        <span>{q}</span>
+        <button className="btn-round" aria-label="Agregar uno" onClick={() => change(id, 1)}>+</button>
+      </span>
+    );
+  };
+
   return (
     <main className="client">
-      <header className="client-head">
+      <header className="brand-head">
         <div className="row between">
-          <span className="pill pill-accent">Mesa {table}</span>
-          {name && <span className="muted small">Hola, {name.split(" ")[0]} 👋</span>}
+          <span className="table-tag">Mesa {table}</span>
+          {name && <span className="muted small">Hola, {name.split(" ")[0]}</span>}
         </div>
-        <h1 className="display" style={{ marginTop: 14 }}>{barName}</h1>
-        <p className="muted" style={{ margin: "6px 0 0" }}>Elige, pide y te avisamos cuando esté listo.</p>
+        <h1 className="brand-name">{barName}</h1>
+        <div className="brand-sub">Menú</div>
+        <p className="muted small brand-tagline">{BRAND.tagline}</p>
       </header>
 
       {recent.length > 0 && (
-        <div className="card row between" style={{ marginBottom: 8 }}>
-          <div>
-            <div style={{ fontWeight: 700 }}>Tienes un pedido en curso</div>
-            <div className="muted small">Pedido #{recent[0].number} · Mesa {recent[0].table}</div>
-          </div>
-          <Link className="btn" href={`/pedido/${recent[0].id}`}>Ver estado</Link>
-        </div>
+        <Link className="ongoing" href={`/pedido/${recent[0].id}`}>
+          <span>
+            <b>Pedido #{recent[0].number} en curso</b>
+            <span className="muted small"> · Mesa {recent[0].table}</span>
+          </span>
+          <span className="ongoing-cta">Ver estado →</span>
+        </Link>
       )}
 
       {categories.length > 1 && (
@@ -125,32 +169,57 @@ export default function MenuClient({ table, products, barName }: Props) {
 
       {products.length === 0 && <div className="empty">El menú está vacío por ahora.</div>}
 
-      {categories.map(([cat, items]) => (
-        <section key={cat} ref={(el) => { sectionRefs.current[cat] = el; }} style={{ scrollMarginTop: 60 }}>
-          <h2 className="cat-title">{cat}</h2>
-          {items.map((p) => {
-            const q = cart[p.id] ?? 0;
+      {categories.map(([cat, groups]) => (
+        <section
+          key={cat}
+          data-cat={cat}
+          ref={(el) => { sectionRefs.current[cat] = el; }}
+          className="menu-section"
+        >
+          <h2 className="section-title">{cat}</h2>
+          {BRAND.categoryNotes[cat] && <div className="section-note">{BRAND.categoryNotes[cat]}</div>}
+
+          {groups.map((g) => {
+            const single = g.options.length === 1 && !g.options[0].variant;
+            const inCart = g.options.some((o) => cart[o.id]);
             return (
-              <article key={p.id} className={`product ${q ? "in-cart" : ""}`}>
-                <div className="grow">
-                  <h3>{p.name}</h3>
-                  {p.description && <div className="muted small">{p.description}</div>}
-                  <div className="price">{formatCOP(p.price)}</div>
-                </div>
-                {q === 0 ? (
-                  <button className="btn btn-primary" onClick={() => change(p.id, 1)}>Agregar</button>
-                ) : (
-                  <div className="qty">
-                    <button className="btn btn-round" aria-label="Quitar uno" onClick={() => change(p.id, -1)}>−</button>
-                    <span>{q}</span>
-                    <button className="btn btn-round" aria-label="Agregar uno" onClick={() => change(p.id, 1)}>+</button>
+              <article key={g.key} className={`item ${inCart ? "in-cart" : ""}`}>
+                {single ? (
+                  <div className="item-row">
+                    <div className="grow">
+                      <h3 className="item-name">{g.name}</h3>
+                      {g.description && <p className="item-desc">{g.description}</p>}
+                    </div>
+                    <div className="item-side">
+                      <span className="item-price">{formatK(g.options[0].price)}</span>
+                      <Qty id={g.options[0].id} />
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <h3 className="item-name">{g.name}</h3>
+                    {g.description && <p className="item-desc">{g.description}</p>}
+                    <div className="variants">
+                      {g.options.map((o) => (
+                        <div key={o.id} className={`variant ${cart[o.id] ? "on" : ""}`}>
+                          <span className="variant-label">{o.variant ?? "Único"}</span>
+                          <span className="item-price">{formatK(o.price)}</span>
+                          <Qty id={o.id} />
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </article>
             );
           })}
         </section>
       ))}
+
+      <footer className="brand-foot">
+        <div className="brand-foot-name">{barName}</div>
+        <div>{BRAND.address}</div>
+      </footer>
 
       {count > 0 && !open && (
         <div className="cart-bar">
@@ -166,7 +235,7 @@ export default function MenuClient({ table, products, barName }: Props) {
         <div className="sheet-backdrop" onClick={() => !sending && setOpen(false)}>
           <div className="sheet" role="dialog" aria-label="Tu pedido" onClick={(e) => e.stopPropagation()}>
             <div className="row between">
-              <h2>Tu pedido</h2>
+              <h2 className="section-title" style={{ margin: 0, textAlign: "left" }}>Tu pedido</h2>
               <button className="btn btn-ghost" onClick={() => setOpen(false)} disabled={sending}>Seguir viendo</button>
             </div>
 
@@ -174,14 +243,14 @@ export default function MenuClient({ table, products, barName }: Props) {
               {lines.map(({ product, qty }) => (
                 <div key={product.id} className="line-item">
                   <div className="grow">
-                    <div style={{ fontWeight: 600 }}>{product.name}</div>
+                    <div className="item-name" style={{ fontSize: "1rem" }}>{productLabel(product)}</div>
                     <div className="muted small">{formatCOP(product.price)} c/u</div>
                   </div>
-                  <div className="qty">
-                    <button className="btn btn-round" onClick={() => change(product.id, -1)}>−</button>
+                  <span className="qty">
+                    <button className="btn-round" onClick={() => change(product.id, -1)}>−</button>
                     <span>{qty}</span>
-                    <button className="btn btn-round" onClick={() => change(product.id, 1)}>+</button>
-                  </div>
+                    <button className="btn-round" onClick={() => change(product.id, 1)}>+</button>
+                  </span>
                 </div>
               ))}
               {lines.length === 0 && <div className="empty">Tu pedido está vacío.</div>}
@@ -207,11 +276,11 @@ export default function MenuClient({ table, products, barName }: Props) {
                   className="textarea"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ej: sin hielo, la michelada con sal"
+                  placeholder="Ej: la michelada con sal, sin hielo"
                   maxLength={200}
                 />
               </label>
-              <p className="muted small" style={{ margin: 0 }}>💳 Pagas en la barra al recibir tu pedido.</p>
+              <p className="muted small" style={{ margin: 0 }}>Pagas en la barra al recibir tu pedido.</p>
               {error && <div className="error">{error}</div>}
               <button className="btn btn-primary btn-lg btn-block" onClick={submit} disabled={sending || lines.length === 0}>
                 {sending ? "Enviando…" : `Pedir · ${formatCOP(total)}`}

@@ -10,7 +10,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const patch: Record<string, unknown> = {};
   if ("name" in b) patch.name = String(b.name).trim().slice(0, 60);
-  if ("description" in b) patch.description = String(b.description ?? "").trim().slice(0, 120) || null;
+  if ("description" in b) patch.description = String(b.description ?? "").trim().slice(0, 200) || null;
+  if ("variant" in b) patch.variant = String(b.variant ?? "").trim().slice(0, 20) || null;
   if ("category" in b) patch.category = String(b.category).trim().slice(0, 30) || "Otros";
   if ("price" in b) {
     const price = Math.round(Number(b.price));

@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   description: string | null;
   category: string;
+  variant: string | null;
   price: number;
   available: boolean;
   sort: number;
@@ -50,6 +51,18 @@ export function formatCOP(value: number): string {
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+/** Formato corto de la carta: 36500 → "$36.5K", 186000 → "$186K". */
+export function formatK(value: number): string {
+  if (value < 1000) return `$${value}`;
+  const k = value / 1000;
+  return `$${Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, "")}K`;
+}
+
+/** Nombre que se muestra en carrito y pedidos: "Amber Ale · Pinta". */
+export function productLabel(p: { name: string; variant: string | null }): string {
+  return p.variant ? `${p.name} · ${p.variant}` : p.name;
 }
 
 export const barTopic = "bar";

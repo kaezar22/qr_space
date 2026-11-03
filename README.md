@@ -7,6 +7,9 @@ muestra el aviso.
 - **Stack:** Next.js 16 (App Router) en **Vercel** + **Supabase** (Postgres + Realtime).
 - **Cliente:** `/mesa/<mesa>` → menú y carrito · `/pedido/<id>` → estado en vivo.
 - **Bar:** `/bar` → tablero de pedidos · `/bar/menu` → productos y agotados · `/bar/qr` → QR para imprimir.
+- **Marca:** colores en `app/globals.css` (`:root`), tipografías de la carta (Cinzel, Oswald, Open Sans) en `app/layout.tsx`,
+  dirección y notas por categoría en `lib/brand.ts`. Los productos con el mismo nombre y distinto tamaño
+  (vaso/pinta/litro, trago/media/botella) se muestran en una sola tarjeta.
 
 ```
 Cliente (celular)                 Vercel (Next.js)                  Supabase
@@ -25,7 +28,9 @@ Cliente (celular)                 Vercel (Next.js)                  Supabase
 1. Entra a <https://supabase.com> y crea un proyecto en la región **East US (North Virginia)**, la misma donde Vercel ejecuta las funciones por defecto.
    Deja **Enable Data API** activado, desmarca **Automatically expose new tables** y marca **Enable automatic RLS**.
 2. Ve a **SQL Editor → New query**, pega todo el contenido de [`supabase/schema.sql`](supabase/schema.sql) y dale **Run**.
-   Esto crea las tablas, la función de pedidos, la seguridad y un menú de ejemplo.
+   Esto crea las tablas, la función de pedidos y la seguridad. Se puede volver a ejecutar sin perder datos.
+   Luego, en otra query, ejecuta [`supabase/menu_soul45.sql`](supabase/menu_soul45.sql) para cargar la carta de Soul45
+   (reemplaza todo el menú; los pedidos no se tocan).
 3. Ve a **Project Settings → API** y copia:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - la clave **anon / publishable** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

@@ -108,8 +108,8 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
     <main className="client">
       <header className="client-head">
         <div className="row between">
-          <span className="pill pill-accent">Mesa {order.table_label}</span>
-          <span className="muted small">{barName}</span>
+          <span className="table-tag">Mesa {order.table_label}</span>
+          <span className="bar-nav-brand">{barName}</span>
         </div>
       </header>
 
@@ -144,7 +144,7 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
 
       <section className="card" style={{ marginTop: 14 }}>
         <div className="row between">
-          <h2 style={{ fontSize: "1.05rem" }}>Detalle</h2>
+          <h2 className="cat-title" style={{ margin: 0 }}>Detalle</h2>
           <span className={`pill ${ready ? "pill-ok" : delivered ? "pill-ok" : cancelled ? "pill-danger" : "pill-warn"}`}>
             {STATUS_LABEL[order.status]}
           </span>

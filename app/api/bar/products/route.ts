@@ -10,7 +10,6 @@ export async function GET() {
   const { data, error } = await db()
     .from("products")
     .select("*")
-    .order("category")
     .order("sort")
     .order("name");
   if (error) return NextResponse.json({ error: "Error" }, { status: 500 });
@@ -25,14 +24,28 @@ export async function POST(req: Request) {
   if (!name || !Number.isFinite(price) || price < 0) {
     return NextResponse.json({ error: "Nombre y precio son obligatorios" }, { status: 400 });
   }
+  const category = String(b.category ?? "").trim().slice(0, 30) || "Otros";
+
+  // Sin orden explícito: va al final de su categoría (o al final del menú si es nueva).
+  let sort = Math.round(Number(b.sort));
+  if (!Number.isFinite(sort) || !("sort" in b)) {
+    const { data: last } = await db()
+      .from("products")
+      .select("sort, category")
+      .order("sort", { ascending: false });
+    const inCat = last?.find((p) => p.category === category);
+    sort = (inCat?.sort ?? last?.[0]?.sort ?? 0) + 1;
+  }
+
   const { data, error } = await db()
     .from("products")
     .insert({
       name,
       price,
-      description: String(b.description ?? "").trim().slice(0, 120) || null,
-      category: String(b.category ?? "").trim().slice(0, 30) || "Otros",
-      sort: Math.round(Number(b.sort) || 0),
+      category,
+      sort,
+      variant: String(b.variant ?? "").trim().slice(0, 20) || null,
+      description: String(b.description ?? "").trim().slice(0, 200) || null,
     })
     .select()
     .single();

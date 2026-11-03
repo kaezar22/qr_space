@@ -10,9 +10,8 @@ export default async function MesaPage({ params }: { params: Promise<{ mesa: str
 
   const { data, error } = await db()
     .from("products")
-    .select("id, name, description, category, price, available, sort")
+    .select("id, name, description, category, variant, price, available, sort")
     .eq("available", true)
-    .order("category")
     .order("sort")
     .order("name");
 
