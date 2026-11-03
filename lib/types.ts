@@ -17,6 +17,7 @@ export interface OrderItem {
   name: string;
   unit_price: number;
   qty: number;
+  unavailable: boolean;
 }
 
 export interface Order {
@@ -43,7 +44,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export const ORDER_SELECT =
-  "id, number, table_label, customer_name, note, status, total, payment_status, created_at, updated_at, ready_at, order_items(id, name, unit_price, qty)";
+  "id, number, table_label, customer_name, note, status, total, payment_status, created_at, updated_at, ready_at, order_items(id, name, unit_price, qty, unavailable)";
 
 export function formatCOP(value: number): string {
   return new Intl.NumberFormat("es-CO", {

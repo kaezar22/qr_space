@@ -315,3 +315,22 @@ label.field .input, label.field .textarea { font-family: var(--f-body); text-tra
 .help-alert.bill { animation-name: none; }
 .help-icon { font-size: 1.6rem; }
 .help-table { font: 600 1.25rem var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+
+/* ───────── Productos agotados en un pedido ───────── */
+.ticket li { align-items: center; }
+.ticket li.out > span.grow { text-decoration: line-through; color: var(--muted); }
+.ticket li.out b { color: var(--muted); }
+.item-flag {
+  appearance: none; cursor: pointer; flex: none; background: transparent; color: var(--muted);
+  border: 1px dashed var(--line); border-radius: 6px; padding: 2px 8px;
+  font: 500 .72rem var(--f-label); letter-spacing: .08em; text-transform: uppercase;
+}
+.item-flag:hover { color: var(--danger); border-color: rgba(226,96,79,.6); }
+.item-flag.undo { color: var(--danger); border-style: solid; border-color: rgba(226,96,79,.6); }
+.line-item.out .grow { text-decoration: line-through; color: var(--muted); }
+.soldout {
+  margin-top: 14px; padding: 14px 16px; border-radius: 14px;
+  background: rgba(124,0,0,.35); border: 1px solid #b3261e;
+}
+.soldout-title { font: 600 1rem var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--cream); }
+.soldout ul { margin: 8px 0 0; padding-left: 18px; }

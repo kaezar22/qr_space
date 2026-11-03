@@ -30,6 +30,7 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
   const [notFound, setNotFound] = useState(false);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const prevStatus = useRef<string | null>(null);
+  const knownOut = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     setPerm("Notification" in window ? Notification.permission : "unsupported");
@@ -49,6 +50,14 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
       showSystemNotification(data);
     }
     prevStatus.current = data.status;
+
+    // Productos que la barra marcó como agotados desde la última vez.
+    const out = new Set(data.order_items.filter((i) => i.unavailable).map((i) => i.id));
+    if (knownOut.current && [...out].some((x) => !knownOut.current!.has(x))) {
+      beep(2);
+      navigator.vibrate?.([250, 120, 250]);
+    }
+    knownOut.current = out;
     setOrder(data);
   }, [id]);
 
@@ -94,6 +103,7 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
   const delivered = order.status === "entregado";
   const cancelled = order.status === "cancelado";
   const step = STEP[order.status] ?? 0;
+  const soldOut = order.order_items.filter((i) => i.unavailable);
 
   const hero = cancelled
     ? { icon: "✋", title: "Pedido cancelado", sub: "Si es un error, acércate a la barra." }
@@ -144,6 +154,19 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
         </p>
       )}
 
+      {soldOut.length > 0 && (
+        <section className="soldout" role="alert">
+          <div className="soldout-title">Lo sentimos, se agotó:</div>
+          <ul>
+            {soldOut.map((it) => <li key={it.id}>{it.qty}× {it.name}</li>)}
+          </ul>
+          <p className="small" style={{ margin: "6px 0 10px" }}>No se te cobrará. ¿Quieres pedir otra cosa?</p>
+          <Link className="btn btn-primary btn-block" href={`/mesa/${encodeURIComponent(order.table_label)}`}>
+            Pedir otra cosa
+          </Link>
+        </section>
+      )}
+
       <section className="card" style={{ marginTop: 14 }}>
         <div className="row between">
           <h2 className="cat-title" style={{ margin: 0 }}>Detalle</h2>
@@ -152,10 +175,14 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
           </span>
         </div>
         {order.order_items.map((it) => (
-          <div key={it.id} className="line-item">
+          <div key={it.id} className={`line-item ${it.unavailable ? "out" : ""}`}>
             <b style={{ color: "var(--accent)", minWidth: 28 }}>{it.qty}×</b>
             <span className="grow">{it.name}</span>
-            <span className="muted">{formatCOP(it.qty * it.unit_price)}</span>
+            {it.unavailable ? (
+              <span className="pill pill-danger">Agotado</span>
+            ) : (
+              <span className="muted">{formatCOP(it.qty * it.unit_price)}</span>
+            )}
           </div>
         ))}
         {order.note && <p className="muted small">Nota: {order.note}</p>}

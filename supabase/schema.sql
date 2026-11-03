@@ -50,6 +50,8 @@ create table if not exists order_items (
   qty         integer not null check (qty > 0)
 );
 create index if not exists order_items_order_idx on order_items (order_id);
+-- La barra puede marcar un producto del pedido como agotado (no se cobra).
+alter table order_items add column if not exists unavailable boolean not null default false;
 
 -- ───────────── Llamados de ayuda desde las mesas ─────────────
 create table if not exists help_requests (

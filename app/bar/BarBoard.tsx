@@ -102,6 +102,23 @@ export default function BarBoard({ barName }: { barName: string }) {
     load();
   }
 
+  async function setUnavailable(order: Order, item: Order["order_items"][number], unavailable: boolean) {
+    if (unavailable && !confirm(`¿"${item.name}" está agotado?\n\nSe quita del pedido #${order.number} (no se cobra), se avisa al cliente y se oculta del menú en todos sus tamaños.\nPara volver a ofrecerlo: pestaña Menú.`)) return;
+    setActive((list) =>
+      list.map((o) =>
+        o.id === order.id
+          ? { ...o, order_items: o.order_items.map((i) => (i.id === item.id ? { ...i, unavailable } : i)) }
+          : o,
+      ),
+    );
+    await fetch(`/api/bar/orders/${order.id}/items/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unavailable, hideProduct: unavailable }),
+    }).catch(() => null);
+    load();
+  }
+
   async function togglePaid(order: Order) {
     const payment_status = order.payment_status === "pagado" ? "en_barra" : "pagado";
     setActive((list) => list.map((o) => (o.id === order.id ? { ...o, payment_status } : o)));
@@ -181,7 +198,21 @@ export default function BarBoard({ barName }: { barName: string }) {
                         </div>
                         <ul>
                           {o.order_items.map((it) => (
-                            <li key={it.id}><b>{it.qty}×</b><span>{it.name}</span></li>
+                            <li key={it.id} className={it.unavailable ? "out" : ""}>
+                              <b>{it.qty}×</b>
+                              <span className="grow">{it.name}</span>
+                              {o.status !== "listo" &&
+                                (it.unavailable ? (
+                                  <button className="item-flag undo" onClick={() => setUnavailable(o, it, false)} title="Sí hay: volver a incluirlo">
+                                    Agotado · deshacer
+                                  </button>
+                                ) : (
+                                  <button className="item-flag" onClick={() => setUnavailable(o, it, true)} title="Marcar como agotado">
+                                    Agotado
+                                  </button>
+                                ))}
+                              {o.status === "listo" && it.unavailable && <span className="pill pill-danger">Agotado</span>}
+                            </li>
                           ))}
                         </ul>
                         {o.note && <div className="note">📝 {o.note}</div>}
