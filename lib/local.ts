@@ -32,3 +32,20 @@ export function saveOrder(order: SavedOrder) {
     localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
   } catch { /* sin almacenamiento */ }
 }
+
+/** Último llamado de ayuda hecho desde este celular. */
+const HELP_KEY = "qr_help";
+export function getHelpId(table: string): string | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(HELP_KEY) ?? "null") as { id: string; table: string; at: number } | null;
+    return v && v.table === table && Date.now() - v.at < 2 * 60 * 60 * 1000 ? v.id : null;
+  } catch {
+    return null;
+  }
+}
+export function setHelpId(table: string, id: string | null) {
+  try {
+    if (id) localStorage.setItem(HELP_KEY, JSON.stringify({ id, table, at: Date.now() }));
+    else localStorage.removeItem(HELP_KEY);
+  } catch { /* sin almacenamiento */ }
+}

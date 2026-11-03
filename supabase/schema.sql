@@ -51,17 +51,30 @@ create table if not exists order_items (
 );
 create index if not exists order_items_order_idx on order_items (order_id);
 
+-- ───────────── Llamados de ayuda desde las mesas ─────────────
+create table if not exists help_requests (
+  id             uuid primary key default gen_random_uuid(),
+  table_label    text not null,
+  customer_name  text,
+  reason         text not null default 'ayuda' check (reason in ('ayuda','dudas','cuenta')),
+  status         text not null default 'pendiente' check (status in ('pendiente','atendida','cancelada')),
+  created_at     timestamptz not null default now(),
+  attended_at    timestamptz
+);
+create index if not exists help_requests_status_idx on help_requests (status, created_at);
+
 -- ───────────── Seguridad ─────────────
 -- RLS activado SIN políticas: el navegador (clave pública) no puede leer ni escribir
 -- las tablas. Todo pasa por las rutas /api de Next.js, que usan la clave secreta.
 alter table products    enable row level security;
 alter table orders      enable row level security;
 alter table order_items enable row level security;
+alter table help_requests enable row level security;
 
 -- Permisos explícitos (funciona con "Automatically expose new tables" activado o no):
 -- solo el servidor (service_role) toca las tablas; anon y authenticated no tienen acceso.
-revoke all on products, orders, order_items from anon, authenticated;
-grant select, insert, update, delete on products, orders, order_items to service_role;
+revoke all on products, orders, order_items, help_requests from anon, authenticated;
+grant select, insert, update, delete on products, orders, order_items, help_requests to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- ───────────── Crear pedido (atómico, precios calculados en el servidor) ─────────────

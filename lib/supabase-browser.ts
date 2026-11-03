@@ -25,6 +25,7 @@ export function useLiveRefresh(topic: string | null, onSignal: () => void, pollM
     if (!topic) return;
     const sb = browserClient();
     const fire = () => cb.current();
+    fire(); // carga inicial inmediata, sin esperar a que conecte el tiempo real
 
     const channel = sb
       ?.channel(topic)

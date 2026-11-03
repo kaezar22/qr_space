@@ -65,5 +65,31 @@ export function productLabel(p: { name: string; variant: string | null }): strin
   return p.variant ? `${p.name} · ${p.variant}` : p.name;
 }
 
+export type HelpReason = "ayuda" | "dudas" | "cuenta";
+export type HelpStatus = "pendiente" | "atendida" | "cancelada";
+
+export interface HelpRequest {
+  id: string;
+  table_label: string;
+  customer_name: string | null;
+  reason: HelpReason;
+  status: HelpStatus;
+  created_at: string;
+  attended_at: string | null;
+}
+
+export const HELP_REASONS: { value: HelpReason; label: string; hint: string; icon: string }[] = [
+  { value: "ayuda", label: "Necesito atención", hint: "Alguien del bar se acerca a tu mesa", icon: "🙋" },
+  { value: "dudas", label: "Tengo una duda del menú", hint: "Te explicamos lo que quieras", icon: "💬" },
+  { value: "cuenta", label: "Quiero la cuenta", hint: "Te llevamos el total para pagar", icon: "🧾" },
+];
+export const HELP_LABEL: Record<HelpReason, string> = {
+  ayuda: "Necesita atención",
+  dudas: "Duda del menú",
+  cuenta: "Pide la cuenta",
+};
+export const HELP_SELECT = "id, table_label, customer_name, reason, status, created_at, attended_at";
+export const helpTopic = (id: string) => `help-${id}`;
+
 export const barTopic = "bar";
 export const orderTopic = (id: string) => `order-${id}`;

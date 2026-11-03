@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import HelpButton from "@/components/HelpButton";
 import { BRAND } from "@/lib/brand";
 import { getName, getOrders, saveOrder, setName, type SavedOrder } from "@/lib/local";
 import { formatCOP, formatK, productLabel, type Product } from "@/lib/types";
@@ -140,11 +141,13 @@ export default function MenuClient({ table, products, barName }: Props) {
       <header className="brand-head">
         <div className="row between">
           <span className="table-tag">Mesa {table}</span>
-          {name && <span className="muted small">Hola, {name.split(" ")[0]}</span>}
+          <HelpButton table={table} />
         </div>
         <h1 className="brand-name">{barName}</h1>
         <div className="brand-sub">Menú</div>
-        <p className="muted small brand-tagline">{BRAND.tagline}</p>
+        <p className="muted small brand-tagline">
+          {name ? `Hola, ${name.split(" ")[0]} · ` : ""}{BRAND.tagline}
+        </p>
       </header>
 
       {recent.length > 0 && (

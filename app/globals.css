@@ -277,3 +277,41 @@ label.field .input, label.field .textarea { font-family: var(--f-body); text-tra
   .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 8mm; }
 }
 .bar-nav-brand { font-family: var(--f-display); font-weight: 800; color: var(--accent); letter-spacing: .18em; text-transform: uppercase; font-size: .9rem; }
+
+/* ───────── Llamados de ayuda ───────── */
+.help-btn {
+  appearance: none; cursor: pointer; border: 1px solid var(--accent-2); background: transparent; color: var(--cream);
+  font: 500 .82rem var(--f-label); letter-spacing: .12em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+}
+.help-btn.pending { border-color: var(--accent); color: var(--accent); background: rgba(245,195,49,.1); animation: helpPulse 1.8s ease-in-out infinite; }
+@keyframes helpPulse { 50% { box-shadow: 0 0 0 6px rgba(245,195,49,.12); } }
+.help-toast {
+  position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 40; width: min(92vw, 520px);
+  background: var(--card-2); border: 1px solid var(--accent); color: var(--text); border-radius: 12px;
+  padding: 12px 16px; text-align: center; box-shadow: var(--shadow); font-weight: 600; animation: up .2s ease-out;
+}
+.help-options { display: grid; gap: 10px; }
+.help-option {
+  appearance: none; cursor: pointer; text-align: left; display: flex; gap: 14px; align-items: center;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; color: var(--text); font: inherit;
+}
+.help-option:active { transform: scale(.98); }
+.help-option:hover { border-color: var(--accent-2); }
+.help-option .icon { font-size: 1.6rem; }
+.help-option.compact { padding: 10px 12px; }
+.help-option.compact .icon { font-size: 1.2rem; }
+.help-option.compact .item-name { font-size: .95rem; }
+.help-status { text-align: center; border: 1px solid var(--accent-2); border-radius: 14px; padding: 18px; background: rgba(245,195,49,.05); }
+.help-status .big { font-size: 2.4rem; margin-bottom: 6px; }
+
+.help-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.help-alert {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px;
+  background: linear-gradient(90deg, rgba(124,0,0,.55), rgba(124,0,0,.25)); border: 1px solid #b3261e;
+  animation: helpAlert 1.4s ease-in-out infinite;
+}
+.help-alert.bill { background: linear-gradient(90deg, rgba(245,195,49,.25), rgba(245,195,49,.08)); border-color: var(--accent); }
+@keyframes helpAlert { 50% { box-shadow: 0 0 0 5px rgba(179,38,30,.18); } }
+.help-alert.bill { animation-name: none; }
+.help-icon { font-size: 1.6rem; }
+.help-table { font: 600 1.25rem var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--text); }

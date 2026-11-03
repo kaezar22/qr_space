@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import BarNav from "@/components/BarNav";
 import { beep, useLiveRefresh } from "@/lib/supabase-browser";
-import { barTopic, formatCOP, STATUS_LABEL, type Order, type OrderStatus } from "@/lib/types";
+import { barTopic, formatCOP, HELP_LABEL, HELP_REASONS, STATUS_LABEL, type HelpRequest, type Order, type OrderStatus } from "@/lib/types";
 
 const COLUMNS: { status: OrderStatus; title: string; empty: string }[] = [
   { status: "recibido", title: "Nuevos", empty: "Sin pedidos nuevos" },
@@ -18,12 +18,14 @@ function minutesSince(iso: string, now: number) {
 export default function BarBoard({ barName }: { barName: string }) {
   const [active, setActive] = useState<Order[]>([]);
   const [done, setDone] = useState<Order[]>([]);
+  const [help, setHelp] = useState<HelpRequest[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [sound, setSound] = useState(false);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const known = useRef<Set<string> | null>(null);
+  const knownHelp = useRef<Set<string> | null>(null);
   const soundRef = useRef(sound);
   soundRef.current = sound;
 
@@ -35,7 +37,16 @@ export default function BarBoard({ barName }: { barName: string }) {
       return;
     }
     if (!res.ok) return;
-    const data = (await res.json()) as { active: Order[]; done: Order[] };
+    const data = (await res.json()) as { active: Order[]; done: Order[]; help?: HelpRequest[] };
+    const helpList = data.help ?? [];
+
+    // Llamado de ayuda nuevo (o mesa que cambió de motivo): sonido distinto, más largo.
+    const helpKeys = new Set(helpList.map((h) => `${h.id}:${h.reason}`));
+    if (knownHelp.current && [...helpKeys].some((k) => !knownHelp.current!.has(k)) && soundRef.current) {
+      beep(5);
+    }
+    knownHelp.current = helpKeys;
+    setHelp(helpList);
 
     const ids = new Set(data.active.map((o) => o.id));
     if (known.current) {
@@ -64,9 +75,15 @@ export default function BarBoard({ barName }: { barName: string }) {
   }, []);
 
   useEffect(() => {
-    const pending = active.filter((o) => o.status === "recibido").length;
+    const pending = active.filter((o) => o.status === "recibido").length + help.length;
     document.title = pending ? `(${pending}) Pedidos · ${barName}` : `Pedidos · ${barName}`;
-  }, [active, barName]);
+  }, [active, help, barName]);
+
+  async function attend(h: HelpRequest) {
+    setHelp((list) => list.filter((x) => x.id !== h.id));
+    await fetch(`/api/bar/help/${h.id}`, { method: "PATCH" }).catch(() => null);
+    load();
+  }
 
   async function move(order: Order, status: OrderStatus) {
     setBusy(order.id);
@@ -113,6 +130,29 @@ export default function BarBoard({ barName }: { barName: string }) {
 
       <main className="bar-main">
         {!loaded && <div className="empty">Cargando pedidos…</div>}
+
+        {help.length > 0 && (
+          <section className="help-strip" aria-live="assertive">
+            {help.map((h) => {
+              const mins = minutesSince(h.created_at, now);
+              const icon = HELP_REASONS.find((r) => r.value === h.reason)?.icon ?? "🙋";
+              return (
+                <div key={h.id} className={`help-alert ${h.reason === "cuenta" ? "bill" : ""}`}>
+                  <span className="help-icon">{icon}</span>
+                  <div className="grow">
+                    <div className="help-table">Mesa {h.table_label}</div>
+                    <div className="small">
+                      {HELP_LABEL[h.reason]}
+                      {h.customer_name ? ` · ${h.customer_name}` : ""}
+                      <span className={mins >= 5 ? "late" : "muted"}> · hace {mins} min</span>
+                    </div>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => attend(h)}>Voy</button>
+                </div>
+              );
+            })}
+          </section>
+        )}
 
         {loaded && (
           <div className="board">

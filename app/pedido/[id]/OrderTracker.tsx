@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import HelpButton from "@/components/HelpButton";
 import { beep, useLiveRefresh } from "@/lib/supabase-browser";
 import { formatCOP, orderTopic, STATUS_LABEL, type Order } from "@/lib/types";
 
@@ -110,6 +111,7 @@ export default function OrderTracker({ id, barName }: { id: string; barName: str
         <div className="row between">
           <span className="table-tag">Mesa {order.table_label}</span>
           <span className="bar-nav-brand">{barName}</span>
+          <HelpButton table={order.table_label} />
         </div>
       </header>
 
